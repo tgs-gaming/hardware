@@ -1,0 +1,7 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "arduino pro micro")(type "KiCad")(uri "C:/devel/work/tgsio/kicad_project/libraries/ProMicroKiCad-master/promicro.pretty")(options "")(descr ""))
+  (lib (name "sparkfun footprint")(type "KiCad")(uri "C:/devel/work/tgsio/kicad_project/libraries/ProMicroKiCad-master/promicro.pretty")(options "")(descr ""))
+  (lib (name "sparkfun 3d footprint")(type "KiCad")(uri "C:/devel/work/tgsio/kicad_project/libraries/kicad-lib-arduino-main/Arduino.3dshapes")(options "")(descr ""))
+  (lib (name "connectors")(type "KiCad")(uri "C:/devel/work/tgsio/kicad_project/libraries/Connector_Dsub.pretty")(options "")(descr ""))
+)

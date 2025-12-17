@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "sparkfun pro micro")(type "Legacy")(uri "C:/devel/work/tgsio/kicad_project/libraries/kicad-lib-arduino-main/Arduino.lib")(options "")(descr ""))
+  (lib (name "connectors")(type "Legacy")(uri "C:/devel/work/tgsio/kicad_project/libraries/Connector/Connector.lib")(options "")(descr ""))
+)

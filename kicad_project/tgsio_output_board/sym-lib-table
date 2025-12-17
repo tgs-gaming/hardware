@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "connectors")(type "Legacy")(uri "C:/devel/work/tgsio/kicad_project/libraries/Connector/Connector.lib")(options "")(descr ""))
+  (lib (name "rp2040 zero")(type "KiCad")(uri "C:/devel/work/tgsio/kicad_project/libraries/RP2040-Zero-Kicad-main/rp2040-zero.kicad_sym")(options "")(descr ""))
+)
