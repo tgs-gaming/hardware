@@ -6094,7 +6094,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "PCM_SparkFun-Fuse:1206"
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 			(at 321.818 95.25 90)
 			(effects
 				(font
@@ -6920,7 +6920,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-24W_7.5x15.4mm_P1.27mm"
+		(property "Footprint" "Package_DIP:DIP-24_W7.62mm_LongPads"
 			(at 245.11 62.23 0)
 			(effects
 				(font
