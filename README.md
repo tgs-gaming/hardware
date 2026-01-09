@@ -1,8 +1,11 @@
 # TGS Hardware
 
-Repositório com projetos de hardware da TGS
+TGS Hardware Projects
+
+[Documentation](https://github.com/tgs-gaming/hardware/wiki)
 
 ## TGS INPUT board
+[INPUT BOARD USAGE MANUAL](https://github.com/tgs-gaming/hardware/wiki/TGS-INPUT-BOARD-USAGE-MANUAL)
 
 <img title="" src="assets/input_board.png" alt="input board" height="250"><img src="assets/input_pcb.png" title="" alt="input_pcb.png" height="250">
 
