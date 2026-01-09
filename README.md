@@ -18,6 +18,6 @@ Repositório com projetos de hardware da TGS
 
 ## TGS OUTPUT board
 
-<img src="file:///D:/devel/work/tgs-github/hardware/assets/output_board.png" title="" alt="output_board.png" width="316">
+<img src="assets/output_board.png" title="" alt="output_board.png" width="316">
 
-<img title="" src="file:///D:/devel/work/tgs-github/hardware/assets/output_pcb.png" alt="output_pcb.png" width="318">
+<img title="" src="assets/output_pcb.png" alt="output_pcb.png" width="318">
