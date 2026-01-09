@@ -6246,7 +6246,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-18W_7.5x11.6mm_P1.27mm"
+		(property "Footprint" "Package_DIP:DIP-18_W7.62mm_LongPads"
 			(at 123.19 147.32 0)
 			(effects
 				(font
@@ -6365,7 +6365,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-18W_7.5x11.6mm_P1.27mm"
+		(property "Footprint" "Package_DIP:DIP-18_W7.62mm_LongPads"
 			(at 171.45 147.32 0)
 			(effects
 				(font
