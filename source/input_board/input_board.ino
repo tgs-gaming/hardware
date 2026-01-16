@@ -3,10 +3,10 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
-#define FW_NAME "tgs input board"
-#define FW_VERSION "json-1.0"
-#define CONFIG_VERSION 8
-#define CONFIG_PATH "/cfg_v8.txt"
+#define FW_NAME "TGS Input Board"
+#define FW_VERSION "1.2"
+#define CONFIG_VERSION 1
+#define CONFIG_PATH "/tgs_input_config.txt"
 
 enum Mode : uint8_t { Tap = 0, Hold = 1 };
 
@@ -57,10 +57,104 @@ static inline String toLowerCopy(const String& s) {
   return r;
 }
 
+static inline void printJsonEscaped(const String& s) {
+  for (uint16_t i = 0; i < s.length(); i++) {
+    char c = s.charAt(i);
+    switch (c) {
+      case '\"': Serial.print("\\\""); break;
+      case '\\': Serial.print("\\\\"); break;
+      case '\b': Serial.print("\\b"); break;
+      case '\f': Serial.print("\\f"); break;
+      case '\n': Serial.print("\\n"); break;
+      case '\r': Serial.print("\\r"); break;
+      case '\t': Serial.print("\\t"); break;
+      default:
+        if ((uint8_t)c < 0x20) {
+          Serial.print("\\u00");
+          const char* hex = "0123456789abcdef";
+          Serial.print(hex[((uint8_t)c >> 4) & 0xF]);
+          Serial.print(hex[((uint8_t)c >> 0) & 0xF]);
+        } else {
+          Serial.print(c);
+        }
+        break;
+    }
+  }
+}
+
+static inline String keyToString(uint16_t k) {
+  if (!k) return "";
+  if (k == (uint16_t)' ') return "space";
+
+  switch (k) {
+    case KEY_RETURN: return "enter";
+    case KEY_TAB: return "tab";
+    case KEY_ESC: return "esc";
+    case KEY_BACKSPACE: return "backspace";
+    case KEY_DELETE: return "del";
+    case KEY_UP_ARROW: return "up";
+    case KEY_DOWN_ARROW: return "down";
+    case KEY_LEFT_ARROW: return "left";
+    case KEY_RIGHT_ARROW: return "right";
+    case KEY_F1: return "f1";
+    case KEY_F2: return "f2";
+    case KEY_F3: return "f3";
+    case KEY_F4: return "f4";
+    case KEY_F5: return "f5";
+    case KEY_F6: return "f6";
+    case KEY_F7: return "f7";
+    case KEY_F8: return "f8";
+    case KEY_F9: return "f9";
+    case KEY_F10: return "f10";
+    case KEY_F11: return "f11";
+    case KEY_F12: return "f12";
+  }
+
+  if (k >= 32 && k <= 126) {
+    String s;
+    s += (char)k;
+    return s;
+  }
+
+  String s = "code:";
+  s += String((unsigned)k);
+  return s;
+}
+
 uint16_t parseKey(const String& in) {
   String s = in;
   s.trim();
   if (!s.length()) return 0;
+
+  if (s.length() >= 5) {
+    String p = s.substring(0, 5);
+    p = toLowerCopy(p);
+    if (p == "code:") {
+      String n = s.substring(5);
+      n.trim();
+      bool ok = true;
+      for (uint16_t i = 0; i < n.length(); i++) {
+        char c = n.charAt(i);
+        if (c < '0' || c > '9') { ok = false; break; }
+      }
+      if (ok && n.length()) {
+        unsigned long v = n.toInt();
+        if (v > 0 && v <= 65535) return (uint16_t)v;
+      }
+      return 0;
+    }
+  }
+
+  bool allDigits = true;
+  for (uint16_t i = 0; i < s.length(); i++) {
+    char c = s.charAt(i);
+    if (c < '0' || c > '9') { allDigits = false; break; }
+  }
+  if (allDigits) {
+    unsigned long v = s.toInt();
+    if (v > 0 && v <= 65535) return (uint16_t)v;
+    return 0;
+  }
 
   if (s.length() == 1) return (uint8_t)s[0];
 
@@ -94,6 +188,13 @@ uint16_t parseKey(const String& in) {
   return 0;
 }
 
+bool parseModeStr(const String& in, uint8_t& outMode) {
+  String s = toLowerCopy(in);
+  if (s == "tap") { outMode = Tap; return true; }
+  if (s == "hold") { outMode = Hold; return true; }
+  return false;
+}
+
 void saveConfig() {
   File f = LittleFS.open(CONFIG_PATH, "w");
   if (!f) return;
@@ -118,6 +219,7 @@ void saveConfig() {
     );
   }
 
+  f.flush();
   f.close();
 }
 
@@ -151,6 +253,13 @@ void applyAll() {
   for (uint8_t i = 0; i < buttonCount; i++) applyOne(i);
 }
 
+void resetConfigStorage() {
+  defaults();
+  LittleFS.remove(CONFIG_PATH);
+  saveConfig();
+  applyAll();
+}
+
 bool loadConfig() {
   if (!LittleFS.exists(CONFIG_PATH)) return true;
 
@@ -167,6 +276,7 @@ bool loadConfig() {
     f.close();
     return false;
   }
+
   if (v != CONFIG_VERSION) {
     f.close();
     return false;
@@ -206,7 +316,7 @@ bool loadConfig() {
 }
 
 void respondError(const char* cmd, const char* err) {
-  Serial.print("{\"ok\":false,\"cmd\":\"");
+  Serial.print("{\"type\":\"resp\",\"ok\":false,\"cmd\":\"");
   Serial.print(cmd);
   Serial.print("\",\"error\":\"");
   Serial.print(err);
@@ -214,15 +324,27 @@ void respondError(const char* cmd, const char* err) {
 }
 
 void respondOk(const char* cmd) {
-  Serial.print("{\"ok\":true,\"cmd\":\"");
+  Serial.print("{\"type\":\"resp\",\"ok\":true,\"cmd\":\"");
   Serial.print(cmd);
   Serial.println("\"}");
 }
 
-void respondConfigs() {
-  Serial.print("{\"ok\":true,\"cmd\":\"configs\",\"data\":{");
-  Serial.print("\"board\":\""); Serial.print(FW_NAME); Serial.print("\",");
-  Serial.print("\"version\":\""); Serial.print(FW_VERSION); Serial.print("\",");
+void respondBoard() {
+  Serial.print("{\"type\":\"resp\",\"ok\":true,\"cmd\":\"board\",\"board\":\"");
+  Serial.print(FW_NAME);
+  Serial.println("\"}");
+}
+
+void respondVersion() {
+  Serial.print("{\"type\":\"resp\",\"ok\":true,\"cmd\":\"version\",\"version\":\"");
+  Serial.print(FW_VERSION);
+  Serial.println("\"}");
+}
+
+void respondExport() {
+  Serial.print("{\"type\":\"resp\",\"ok\":true,\"cmd\":\"export\",\"data\":{");
+  Serial.print("\"schema\":1,");
+  Serial.print("\"cfg_ver\":"); Serial.print(CONFIG_VERSION); Serial.print(",");
   Serial.print("\"baud\":"); Serial.print(serialBaud); Serial.print(",");
   Serial.print("\"events\":"); Serial.print(eventsEnabled ? "true" : "false"); Serial.print(",");
   Serial.print("\"keyboard\":"); Serial.print(keyboardEnabled ? "true" : "false"); Serial.print(",");
@@ -233,12 +355,81 @@ void respondConfigs() {
     Serial.print("{\"pin\":"); Serial.print(c.pin);
     Serial.print(",\"mode\":\""); Serial.print(c.mode == Hold ? "hold" : "tap");
     Serial.print("\",\"invert\":"); Serial.print(c.invert ? "true" : "false");
-    Serial.print(",\"key\":"); Serial.print(c.key);
+    Serial.print(",\"key\":\"");
+    String ks = keyToString(c.key);
+    printJsonEscaped(ks);
+    Serial.print("\"");
     Serial.print(",\"debounce\":"); Serial.print(c.debounceMillis);
     Serial.print(",\"tap\":"); Serial.print(c.tapMillis);
     Serial.print("}");
   }
   Serial.println("]}}");
+}
+
+bool applyImport(JsonVariant dataVar, uint32_t& newBaudOut, bool& baudChangedOut) {
+  if (dataVar.isNull() || !dataVar.is<JsonObject>()) return false;
+
+  JsonObject data = dataVar.as<JsonObject>();
+
+  uint32_t newBaud = data["baud"] | serialBaud;
+  if (newBaud < 300 || newBaud > 3000000) return false;
+
+  bool newEvents = data["events"] | eventsEnabled;
+  bool newKeyboard = data["keyboard"] | keyboardEnabled;
+
+  JsonArray btns = data["buttons"].as<JsonArray>();
+  if (btns.isNull()) return false;
+  if (btns.size() > MAX_BUTTONS) return false;
+
+  ButtonConfig temp[MAX_BUTTONS];
+  uint8_t tempCount = 0;
+
+  for (JsonVariant v : btns) {
+    if (!v.is<JsonObject>()) return false;
+    JsonObject o = v.as<JsonObject>();
+
+    int pin = o["pin"] | -1;
+    if (pin < 0 || pin > 29) return false;
+
+    String modeStr = (const char*)(o["mode"] | "tap");
+    uint8_t mode;
+    if (!parseModeStr(modeStr, mode)) return false;
+
+    bool inv = o["invert"] | false;
+
+    String keyStr = (const char*)(o["key"] | "");
+    uint16_t key = parseKey(keyStr);
+    if (!key) return false;
+
+    uint16_t deb = (uint16_t)(o["debounce"] | 8);
+    uint16_t tap = (uint16_t)(o["tap"] | 40);
+
+    temp[tempCount].pin = (uint8_t)pin;
+    temp[tempCount].mode = mode;
+    temp[tempCount].invert = inv ? 1 : 0;
+    temp[tempCount].key = key;
+    temp[tempCount].debounceMillis = deb;
+    temp[tempCount].tapMillis = tap;
+    tempCount++;
+  }
+
+  uint32_t oldBaud = serialBaud;
+
+  buttonCount = tempCount;
+  for (uint8_t i = 0; i < buttonCount; i++) buttons[i].config = temp[i];
+
+  eventsEnabled = newEvents;
+  keyboardEnabled = newKeyboard;
+  serialBaud = newBaud;
+
+  pendingMask = 0;
+
+  applyAll();
+  saveConfig();
+
+  baudChangedOut = (oldBaud != newBaud);
+  newBaudOut = newBaud;
+  return true;
 }
 
 void emitEvent(uint8_t idx, bool closed) {
@@ -248,7 +439,7 @@ void emitEvent(uint8_t idx, bool closed) {
     pendingMask |= (1u << idx);
     return;
   }
-  Serial.print("{\"event\":true,\"pin\":");
+  Serial.print("{\"type\":\"event\",\"pin\":");
   Serial.print(buttons[idx].config.pin);
   Serial.print(",\"state\":\"");
   Serial.print(closed ? "closed" : "open");
@@ -273,85 +464,41 @@ void handleJson(const String& line) {
   const char* cmd = doc["cmd"] | "";
   inResponse = true;
 
-  if (!strcmp(cmd, "configs")) {
-    respondConfigs();
+  if (!strcmp(cmd, "export")) {
+    respondExport();
+
+  } else if (!strcmp(cmd, "import")) {
+    uint32_t newBaud = serialBaud;
+    bool baudChanged = false;
+
+    JsonVariant data = doc["data"];
+    if (!applyImport(data, newBaud, baudChanged)) {
+      respondError(cmd, "args");
+    } else {
+      respondOk(cmd);
+      if (baudChanged) {
+        Serial.flush();
+        Serial.end();
+        delay(20);
+        Serial.begin(newBaud);
+        delay(10);
+      }
+    }
+
   } else if (!strcmp(cmd, "board")) {
-    Serial.print("{\"ok\":true,\"cmd\":\"board\",\"board\":\"");
-    Serial.print(FW_NAME);
-    Serial.println("\"}");
+    respondBoard();
+
   } else if (!strcmp(cmd, "version")) {
-    Serial.print("{\"ok\":true,\"cmd\":\"version\",\"version\":\"");
-    Serial.print(FW_VERSION);
-    Serial.println("\"}");
-  } else if (!strcmp(cmd, "serial")) {
-    uint32_t b = doc["baud"] | 0;
-    if (b < 300 || b > 3000000) {
-      respondError(cmd, "args");
-    } else {
-      serialBaud = b;
-      saveConfig();
-      respondOk(cmd);
-      Serial.flush();
-      Serial.end();
-      delay(20);
-      Serial.begin(serialBaud);
-      delay(10);
-    }
-  } else if (!strcmp(cmd, "subscribe")) {
-    eventsEnabled = doc["enabled"] | false;
-    saveConfig();
+    respondVersion();
+
+  } else if (!strcmp(cmd, "reset")) {
+    resetConfigStorage();
     respondOk(cmd);
-  } else if (!strcmp(cmd, "keyboard")) {
-    keyboardEnabled = doc["enabled"] | true;
-    saveConfig();
-    respondOk(cmd);
-  } else if (!strcmp(cmd, "add")) {
-    int pin = doc["pin"] | -1;
-    if (pin < 0 || pin > 29) {
-      respondError(cmd, "args");
-    } else {
-      uint8_t idx = 0xFF;
-      for (uint8_t i = 0; i < buttonCount; i++) if (buttons[i].config.pin == (uint8_t)pin) { idx = i; break; }
-      if (idx == 0xFF) {
-        if (buttonCount >= MAX_BUTTONS) {
-          respondError(cmd, "full");
-          goto done;
-        }
-        idx = buttonCount++;
-      }
 
-      auto& c = buttons[idx].config;
-      c.pin = (uint8_t)pin;
-
-      String mode = doc["mode"] | "tap";
-      
-      mode = toLowerCopy(mode);
-      c.mode = (mode == "hold") ? Hold : Tap;
-
-      c.invert = (doc["invert"] | false) ? 1 : 0;
-
-      String keyStr = doc["key"] | "";
-      
-      uint16_t k = parseKey(keyStr);
-      if (!k) {
-        buttonCount = (idx == buttonCount - 1) ? (uint8_t)(buttonCount - 1) : buttonCount;
-        respondError(cmd, "key");
-        goto done;
-      }
-      c.key = k;
-
-      c.debounceMillis = (uint16_t)(doc["debounce"] | 8);
-      c.tapMillis = (uint16_t)(doc["tap"] | 40);
-
-      applyOne(idx);
-      saveConfig();
-      respondOk(cmd);
-    }
   } else {
     respondError(cmd, "cmd");
   }
 
-done:
   inResponse = false;
   flushEvents();
 }
@@ -428,7 +575,10 @@ void setup() {
 
   Keyboard.begin();
 
-  loadConfig();
+  if (!loadConfig()) {
+    resetConfigStorage();
+  }
+
   Serial.begin(serialBaud);
   delay(10);
 }
