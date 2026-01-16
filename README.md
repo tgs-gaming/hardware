@@ -10,11 +10,11 @@ TGS Hardware Projects
 
 [INPUT BOARD USAGE MANUAL](docs/tgs_input_board_usage_manual.md)
 
-<img title="" src="docs/images/input_board.png" alt="input board" height="250">
+<img title="" src="docs/images/input_board.png" alt="input board" height="250"><img src="docs/images/input_pcb.png" title="" alt="input_pcb.png" height="250">
 
 Board Configuration Tool
 
-<img src="docs/images/board-firmware-setup.png" title="" alt="board-firmware-setup.png" height="250"><img src="docs/images/input_pcb.png" title="" alt="input_pcb.png" height="250">
+<img src="docs/images/board-firmware-setup.png" title="" alt="board-firmware-setup.png" height="250">
 
 ## 
 
