@@ -14,13 +14,13 @@ TGS Hardware Projects
 
 Board Configuration Tool
 
-<img src="file:///D:/devel/work/tgs-github/hardware/docs/images/board-firmware-setup.png" title="" alt="board-firmware-setup.png" width="419">
+<img src="docs/images/board-firmware-setup.png" title="" alt="board-firmware-setup.png" height="250"><img src="docs/images/input_pcb.png" title="" alt="input_pcb.png" height="250">
 
 ## 
 
 ## TGS INPUT/OUTPUT board
 
-<img title="" src="file:///C:/devel/work/tgs-github/hardware/docs/images/input_output_board.png" alt="input_output_board.png" height="250"><img src="docs/images/input_output_pcb.png" title="" alt="input_output_pcb.png" width="323">
+<img title="" src="docs/images/input_output_board.png" alt="input_output_board.png" height="250"><img src="docs/images/input_output_pcb.png" title="" alt="input_output_pcb.png" height="250">
 
 ## TGS OUTPUT board
 
