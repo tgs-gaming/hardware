@@ -8,6 +8,9 @@
 #define CONFIG_VERSION 1
 #define CONFIG_PATH "/tgs_input_config.txt"
 
+static const uint16_t RX_LIMIT = 8192;
+static const size_t JSON_CAPACITY = 16384;
+
 enum Mode : uint8_t { Tap = 0, Hold = 1 };
 
 struct ButtonConfig {
@@ -195,6 +198,28 @@ bool parseModeStr(const String& in, uint8_t& outMode) {
   return false;
 }
 
+static const uint8_t MAX_VPINS = 32;
+static const int8_t V2G[MAX_VPINS] = {
+  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+  -1, -1,
+  13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+};
+
+static inline bool vpinToGpio(int vpin, uint8_t& gpioOut) {
+  if (vpin < 1 || vpin > (int)MAX_VPINS) return false;
+  int8_t g = V2G[vpin - 1];
+  if (g < 0 || g > 29) return false;
+  gpioOut = (uint8_t)g;
+  return true;
+}
+
+static inline int gpioToVpin(uint8_t gpio) {
+  for (int i = 0; i < (int)MAX_VPINS; i++) {
+    if (V2G[i] == (int8_t)gpio) return i + 1;
+  }
+  return 0;
+}
+
 void saveConfig() {
   File f = LittleFS.open(CONFIG_PATH, "w");
   if (!f) return;
@@ -298,6 +323,7 @@ bool loadConfig() {
     int deb, tap;
 
     if (sscanf(line.c_str(), "%d %d %d %u %d %d", &pin, &mode, &inv, &key, &deb, &tap) == 6) {
+      if (pin < 0 || pin > 29) continue;
       auto& c = buttons[buttonCount].config;
       c.pin = (uint8_t)pin;
       c.mode = (uint8_t)mode;
@@ -305,7 +331,6 @@ bool loadConfig() {
       c.key = (uint16_t)key;
       c.debounceMillis = (uint16_t)deb;
       c.tapMillis = (uint16_t)tap;
-
       buttonCount++;
     }
   }
@@ -351,8 +376,9 @@ void respondExport() {
   Serial.print("\"buttons\":[");
   for (uint8_t i = 0; i < buttonCount; i++) {
     auto& c = buttons[i].config;
+    int vpin = gpioToVpin(c.pin);
     if (i) Serial.print(",");
-    Serial.print("{\"pin\":"); Serial.print(c.pin);
+    Serial.print("{\"pin\":"); Serial.print(vpin);
     Serial.print(",\"mode\":\""); Serial.print(c.mode == Hold ? "hold" : "tap");
     Serial.print("\",\"invert\":"); Serial.print(c.invert ? "true" : "false");
     Serial.print(",\"key\":\"");
@@ -388,8 +414,9 @@ bool applyImport(JsonVariant dataVar, uint32_t& newBaudOut, bool& baudChangedOut
     if (!v.is<JsonObject>()) return false;
     JsonObject o = v.as<JsonObject>();
 
-    int pin = o["pin"] | -1;
-    if (pin < 0 || pin > 29) return false;
+    int vpin = o["pin"] | -1;
+    uint8_t gpio;
+    if (!vpinToGpio(vpin, gpio)) return false;
 
     String modeStr = (const char*)(o["mode"] | "tap");
     uint8_t mode;
@@ -404,7 +431,11 @@ bool applyImport(JsonVariant dataVar, uint32_t& newBaudOut, bool& baudChangedOut
     uint16_t deb = (uint16_t)(o["debounce"] | 8);
     uint16_t tap = (uint16_t)(o["tap"] | 40);
 
-    temp[tempCount].pin = (uint8_t)pin;
+    for (uint8_t i = 0; i < tempCount; i++) {
+      if (temp[i].pin == gpio) return false;
+    }
+
+    temp[tempCount].pin = gpio;
     temp[tempCount].mode = mode;
     temp[tempCount].invert = inv ? 1 : 0;
     temp[tempCount].key = key;
@@ -432,17 +463,24 @@ bool applyImport(JsonVariant dataVar, uint32_t& newBaudOut, bool& baudChangedOut
   return true;
 }
 
-void emitEvent(uint8_t idx, bool closed) {
+void emitEvent(uint8_t idx, bool rawClosed) {
   if (!eventsEnabled || !Serial) return;
+
+  bool logicalOn = buttons[idx].config.invert ? !rawClosed : rawClosed;
+
   if (inResponse) {
-    pendingClosed[idx] = closed;
+    pendingClosed[idx] = rawClosed;
     pendingMask |= (1u << idx);
+    buttons[idx].lastLogicalOn = logicalOn;
     return;
   }
+
+  int vpin = gpioToVpin(buttons[idx].config.pin);
+
   Serial.print("{\"type\":\"event\",\"pin\":");
-  Serial.print(buttons[idx].config.pin);
+  Serial.print(vpin);
   Serial.print(",\"state\":\"");
-  Serial.print(closed ? "closed" : "open");
+  Serial.print(logicalOn ? "on" : "off");
   Serial.println("\"}");
 }
 
@@ -457,9 +495,47 @@ void flushEvents() {
   }
 }
 
+void buildStateSnapshot(uint32_t &logicalMask) {
+  logicalMask = 0;
+
+  for (uint8_t i = 0; i < buttonCount; i++) {
+    buttons[i].debounce.update();
+
+    bool rawClosed = (buttons[i].debounce.read() == LOW);
+    bool logicalOn = buttons[i].config.invert ? !rawClosed : rawClosed;
+
+    buttons[i].lastRawClosed = rawClosed;
+    buttons[i].lastLogicalOn = logicalOn;
+
+    if (logicalOn) logicalMask |= (1u << i);
+  }
+}
+
+void respondSync() {
+  uint32_t logicalMask;
+  buildStateSnapshot(logicalMask);
+
+  Serial.print("{\"type\":\"resp\",\"ok\":true,\"cmd\":\"sync\"");
+  Serial.print(",\"mask\":"); Serial.print(logicalMask);
+  Serial.print(",\"states\":[");
+
+  for (uint8_t i = 0; i < buttonCount; i++) {
+    int vpin = gpioToVpin(buttons[i].config.pin);
+    bool logicalOn = buttons[i].lastLogicalOn;
+
+    if (i) Serial.print(",");
+    Serial.print("{\"pin\":"); Serial.print(vpin);
+    Serial.print(",\"state\":\""); Serial.print(logicalOn ? "on" : "off");
+    Serial.print("\"}");
+  }
+
+  Serial.println("]}");
+}
+
 void handleJson(const String& line) {
-  JsonDocument doc;
-  if (deserializeJson(doc, line)) return;
+  StaticJsonDocument<JSON_CAPACITY> doc;
+  DeserializationError err = deserializeJson(doc, line);
+  if (err) return;
 
   const char* cmd = doc["cmd"] | "";
   inResponse = true;
@@ -491,6 +567,9 @@ void handleJson(const String& line) {
   } else if (!strcmp(cmd, "version")) {
     respondVersion();
 
+  } else if (!strcmp(cmd, "sync")) {
+    respondSync();
+
   } else if (!strcmp(cmd, "reset")) {
     resetConfigStorage();
     respondOk(cmd);
@@ -512,7 +591,7 @@ void processSerial() {
       l.trim();
       if (l.length()) handleJson(l);
     } else if (c != '\r') {
-      if (rx.length() < 512) rx += c;
+      if (rx.length() < RX_LIMIT) rx += c;
     }
   }
 }

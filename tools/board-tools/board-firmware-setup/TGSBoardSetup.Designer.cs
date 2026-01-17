@@ -28,9 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            connectButton = new Button();
-            portCombobox = new ComboBox();
             pinsDatagrid = new DataGridView();
+            pin = new DataGridViewComboBoxColumn();
+            key = new DataGridViewTextBoxColumn();
+            mode = new DataGridViewComboBoxColumn();
+            invert = new DataGridViewCheckBoxColumn();
+            debounce = new DataGridViewTextBoxColumn();
+            tap = new DataGridViewTextBoxColumn();
+            state = new DataGridViewTextBoxColumn();
             eventsList = new ListBox();
             clearButton = new Button();
             saveButton = new Button();
@@ -39,120 +44,18 @@
             emulateKeyboardCheckbox = new CheckBox();
             exportButton = new Button();
             importButton = new Button();
-            pin = new DataGridViewComboBoxColumn();
-            key = new DataGridViewTextBoxColumn();
-            mode = new DataGridViewComboBoxColumn();
-            invert = new DataGridViewCheckBoxColumn();
-            debounce = new DataGridViewTextBoxColumn();
-            tap = new DataGridViewTextBoxColumn();
+            connectButton = new Button();
             ((System.ComponentModel.ISupportInitialize)pinsDatagrid).BeginInit();
             SuspendLayout();
-            // 
-            // connectButton
-            // 
-            connectButton.Location = new Point(11, 12);
-            connectButton.Name = "connectButton";
-            connectButton.Size = new Size(121, 40);
-            connectButton.TabIndex = 0;
-            connectButton.Text = "CONNECT";
-            connectButton.UseVisualStyleBackColor = true;
-            connectButton.Click += connect_Click;
-            // 
-            // portCombobox
-            // 
-            portCombobox.FormattingEnabled = true;
-            portCombobox.Location = new Point(13, 58);
-            portCombobox.Name = "portCombobox";
-            portCombobox.Size = new Size(118, 23);
-            portCombobox.TabIndex = 1;
             // 
             // pinsDatagrid
             // 
             pinsDatagrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            pinsDatagrid.Columns.AddRange(new DataGridViewColumn[] { pin, key, mode, invert, debounce, tap });
+            pinsDatagrid.Columns.AddRange(new DataGridViewColumn[] { pin, key, mode, invert, debounce, tap, state });
             pinsDatagrid.Location = new Point(140, 12);
             pinsDatagrid.Name = "pinsDatagrid";
-            pinsDatagrid.Size = new Size(390, 424);
+            pinsDatagrid.Size = new Size(463, 424);
             pinsDatagrid.TabIndex = 15;
-            // 
-            // eventsList
-            // 
-            eventsList.FormattingEnabled = true;
-            eventsList.ItemHeight = 15;
-            eventsList.Location = new Point(536, 12);
-            eventsList.Name = "eventsList";
-            eventsList.ScrollAlwaysVisible = true;
-            eventsList.Size = new Size(245, 424);
-            eventsList.TabIndex = 16;
-            // 
-            // clearButton
-            // 
-            clearButton.Location = new Point(11, 334);
-            clearButton.Name = "clearButton";
-            clearButton.Size = new Size(120, 35);
-            clearButton.TabIndex = 18;
-            clearButton.Text = "CLEAR";
-            clearButton.UseVisualStyleBackColor = true;
-            clearButton.Click += clearButton_Click;
-            // 
-            // saveButton
-            // 
-            saveButton.Location = new Point(11, 375);
-            saveButton.Name = "saveButton";
-            saveButton.Size = new Size(120, 61);
-            saveButton.TabIndex = 20;
-            saveButton.Text = "SAVE TO BOARD";
-            saveButton.UseVisualStyleBackColor = true;
-            saveButton.Click += saveToBoardButton_Click;
-            // 
-            // baudCombobox
-            // 
-            baudCombobox.FormattingEnabled = true;
-            baudCombobox.Items.AddRange(new object[] { "9600", "19200", "38400", "57600", "115200" });
-            baudCombobox.Location = new Point(11, 133);
-            baudCombobox.Name = "baudCombobox";
-            baudCombobox.Size = new Size(120, 23);
-            baudCombobox.TabIndex = 21;
-            // 
-            // eventsCheckbox
-            // 
-            eventsCheckbox.AutoSize = true;
-            eventsCheckbox.Location = new Point(11, 162);
-            eventsCheckbox.Name = "eventsCheckbox";
-            eventsCheckbox.Size = new Size(87, 19);
-            eventsCheckbox.TabIndex = 22;
-            eventsCheckbox.Text = "Emit Events";
-            eventsCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // emulateKeyboardCheckbox
-            // 
-            emulateKeyboardCheckbox.AutoSize = true;
-            emulateKeyboardCheckbox.Location = new Point(11, 187);
-            emulateKeyboardCheckbox.Name = "emulateKeyboardCheckbox";
-            emulateKeyboardCheckbox.Size = new Size(122, 19);
-            emulateKeyboardCheckbox.TabIndex = 23;
-            emulateKeyboardCheckbox.Text = "Emulate Keyboard";
-            emulateKeyboardCheckbox.UseVisualStyleBackColor = true;
-            // 
-            // exportButton
-            // 
-            exportButton.Location = new Point(11, 285);
-            exportButton.Name = "exportButton";
-            exportButton.Size = new Size(120, 43);
-            exportButton.TabIndex = 24;
-            exportButton.Text = "EXPORT TO FILE";
-            exportButton.UseVisualStyleBackColor = true;
-            exportButton.Click += exportButton_Click;
-            // 
-            // importButton
-            // 
-            importButton.Location = new Point(11, 234);
-            importButton.Name = "importButton";
-            importButton.Size = new Size(120, 45);
-            importButton.TabIndex = 25;
-            importButton.Text = "IMPORT FROM FILE";
-            importButton.UseVisualStyleBackColor = true;
-            importButton.Click += importButton_Click;
             // 
             // pin
             // 
@@ -193,11 +96,108 @@
             tap.Name = "tap";
             tap.Width = 50;
             // 
+            // state
+            // 
+            state.HeaderText = "STATE";
+            state.Name = "state";
+            state.ReadOnly = true;
+            state.Width = 70;
+            // 
+            // eventsList
+            // 
+            eventsList.FormattingEnabled = true;
+            eventsList.ItemHeight = 15;
+            eventsList.Location = new Point(609, 12);
+            eventsList.Name = "eventsList";
+            eventsList.ScrollAlwaysVisible = true;
+            eventsList.Size = new Size(172, 424);
+            eventsList.TabIndex = 16;
+            // 
+            // clearButton
+            // 
+            clearButton.Location = new Point(8, 334);
+            clearButton.Name = "clearButton";
+            clearButton.Size = new Size(121, 35);
+            clearButton.TabIndex = 18;
+            clearButton.Text = "CLEAR";
+            clearButton.UseVisualStyleBackColor = true;
+            clearButton.Click += clearButton_Click;
+            // 
+            // saveButton
+            // 
+            saveButton.Location = new Point(8, 375);
+            saveButton.Name = "saveButton";
+            saveButton.Size = new Size(121, 61);
+            saveButton.TabIndex = 20;
+            saveButton.Text = "SAVE TO BOARD";
+            saveButton.UseVisualStyleBackColor = true;
+            saveButton.Click += saveToBoardButton_Click;
+            // 
+            // baudCombobox
+            // 
+            baudCombobox.FormattingEnabled = true;
+            baudCombobox.Items.AddRange(new object[] { "9600", "19200", "38400", "57600", "115200" });
+            baudCombobox.Location = new Point(9, 156);
+            baudCombobox.Name = "baudCombobox";
+            baudCombobox.Size = new Size(120, 23);
+            baudCombobox.TabIndex = 21;
+            // 
+            // eventsCheckbox
+            // 
+            eventsCheckbox.AutoSize = true;
+            eventsCheckbox.Location = new Point(9, 185);
+            eventsCheckbox.Name = "eventsCheckbox";
+            eventsCheckbox.Size = new Size(87, 19);
+            eventsCheckbox.TabIndex = 22;
+            eventsCheckbox.Text = "Emit Events";
+            eventsCheckbox.UseVisualStyleBackColor = true;
+            // 
+            // emulateKeyboardCheckbox
+            // 
+            emulateKeyboardCheckbox.AutoSize = true;
+            emulateKeyboardCheckbox.Location = new Point(9, 210);
+            emulateKeyboardCheckbox.Name = "emulateKeyboardCheckbox";
+            emulateKeyboardCheckbox.Size = new Size(122, 19);
+            emulateKeyboardCheckbox.TabIndex = 23;
+            emulateKeyboardCheckbox.Text = "Emulate Keyboard";
+            emulateKeyboardCheckbox.UseVisualStyleBackColor = true;
+            // 
+            // exportButton
+            // 
+            exportButton.Location = new Point(8, 285);
+            exportButton.Name = "exportButton";
+            exportButton.Size = new Size(121, 43);
+            exportButton.TabIndex = 24;
+            exportButton.Text = "EXPORT TO FILE";
+            exportButton.UseVisualStyleBackColor = true;
+            exportButton.Click += exportButton_Click;
+            // 
+            // importButton
+            // 
+            importButton.Location = new Point(8, 234);
+            importButton.Name = "importButton";
+            importButton.Size = new Size(121, 45);
+            importButton.TabIndex = 25;
+            importButton.Text = "IMPORT FROM FILE";
+            importButton.UseVisualStyleBackColor = true;
+            importButton.Click += importButton_Click;
+            // 
+            // connectButton
+            // 
+            connectButton.Location = new Point(8, 12);
+            connectButton.Name = "connectButton";
+            connectButton.Size = new Size(121, 49);
+            connectButton.TabIndex = 26;
+            connectButton.Text = "CONNECT";
+            connectButton.UseVisualStyleBackColor = true;
+            connectButton.Click += connectButton_Click;
+            // 
             // TGSBoardSetup
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(793, 449);
+            Controls.Add(connectButton);
             Controls.Add(importButton);
             Controls.Add(exportButton);
             Controls.Add(emulateKeyboardCheckbox);
@@ -207,20 +207,15 @@
             Controls.Add(clearButton);
             Controls.Add(eventsList);
             Controls.Add(pinsDatagrid);
-            Controls.Add(portCombobox);
-            Controls.Add(connectButton);
             Name = "TGSBoardSetup";
-            Text = "sss";
-            Load += Form1_Load;
+            Text = "TGS Input Board";
+            Load += TGSBoardSetup_Load;
             ((System.ComponentModel.ISupportInitialize)pinsDatagrid).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-
-        private Button connectButton;
-        private ComboBox portCombobox;
         private DataGridView pinsDatagrid;
         private ListBox eventsList;
         private Button clearButton;
@@ -230,11 +225,13 @@
         private CheckBox emulateKeyboardCheckbox;
         private Button exportButton;
         private Button importButton;
+        private Button connectButton;
         private DataGridViewComboBoxColumn pin;
         private DataGridViewTextBoxColumn key;
         private DataGridViewComboBoxColumn mode;
         private DataGridViewCheckBoxColumn invert;
         private DataGridViewTextBoxColumn debounce;
         private DataGridViewTextBoxColumn tap;
+        private DataGridViewTextBoxColumn state;
     }
 }
